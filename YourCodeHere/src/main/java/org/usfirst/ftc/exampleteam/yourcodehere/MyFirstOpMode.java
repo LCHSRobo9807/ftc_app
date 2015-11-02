@@ -33,7 +33,7 @@ public class MyFirstOpMode extends SynchronousOpMode
             {
             if (updateGamepads())
                 {
-                // The game pad state has changed. Do something with that!
+                // Mr. Reynolds says:  Put your teleOp code here...
                 }
 
             telemetry.update();
