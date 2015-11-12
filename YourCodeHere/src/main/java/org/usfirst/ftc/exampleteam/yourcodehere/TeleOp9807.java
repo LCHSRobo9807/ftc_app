@@ -29,16 +29,10 @@ import org.swerverobotics.library.interfaces.*;
          */
         this.motorLeft = this.hardwareMap.dcMotor.get("ldrive");
         this.motorRight = this.hardwareMap.dcMotor.get("rdrive");
-        //legacy motor
-       // this.motor3 = this.hardwareMap.dcMotor.get("winch");
-        //this.slingshot= this.hardwareMap.dcMotor.get("slingshot");
 
 
-        //set motor channel to run without encoders
-       // motorLeft.setChannelMode(DcMotorController.RunMode.RUN_WITHOUT_ENCODERS);
-       // motorRight.setChannelMode(DcMotorController.RunMode.RUN_WITHOUT_ENCODERS);
-        //reverse Left motor
-        //motorLeft.setDirection(DcMotor.Direction.REVERSE);
+
+        //reverse right motor
         motorRight.setDirection(DcMotor.Direction.REVERSE);
 
   
