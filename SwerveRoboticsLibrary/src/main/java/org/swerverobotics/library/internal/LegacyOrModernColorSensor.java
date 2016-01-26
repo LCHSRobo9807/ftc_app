@@ -2,8 +2,8 @@ package org.swerverobotics.library.internal;
 
 import android.graphics.Color;
 
-import com.qualcomm.hardware.HiTechnicNxtColorSensor;
-import com.qualcomm.hardware.ModernRoboticsI2cColorSensor;
+import com.qualcomm.hardware.hitechnic.*;
+import com.qualcomm.hardware.modernrobotics.*;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.*;
 import com.qualcomm.robotcore.util.*;
@@ -16,7 +16,7 @@ import org.swerverobotics.library.interfaces.*;
  * Modern Robotics color sensor. The two are very similar I2C devices; it's easy
  * for them to share code.
  */
-public class SwerveColorSensor extends ColorSensor implements IOpModeStateTransitionEvents
+public class LegacyOrModernColorSensor implements ColorSensor, IOpModeStateTransitionEvents
     {
     //----------------------------------------------------------------------------------------------
     // State
@@ -57,8 +57,8 @@ public class SwerveColorSensor extends ColorSensor implements IOpModeStateTransi
     // Construction
     //----------------------------------------------------------------------------------------------
 
-    private SwerveColorSensor(OpMode context, I2cDeviceClient i2cDeviceClient, ClassFactory.SENSOR_FLAVOR flavor, ColorSensor target,
-                             I2cController controller, int targetPort)
+    private LegacyOrModernColorSensor(OpMode context, I2cDeviceClient i2cDeviceClient, ClassFactory.SENSOR_FLAVOR flavor, ColorSensor target,
+                                      I2cController controller, int targetPort)
         {
         switch (flavor)
             {
@@ -105,16 +105,16 @@ public class SwerveColorSensor extends ColorSensor implements IOpModeStateTransi
             flavor      = ClassFactory.SENSOR_FLAVOR.MODERNROBOTICS;
             }
         else
-            throw new IllegalArgumentException(String.format("unknown color sensor class: %s", target.getClass().getSimpleName()));
+            throw new IllegalArgumentException(String.format("incorrect color sensor class: %s", target.getClass().getSimpleName()));
 
         return create(context, controller, port, i2cAddr8Bit, flavor, target);
         }
 
     public static ColorSensor create(OpMode context, I2cController controller, int port, int i2cAddr8Bit, ClassFactory.SENSOR_FLAVOR flavor, ColorSensor target)
         {
-        II2cDevice i2cDevice            = new I2cDeviceOnI2cDeviceController(controller, port);
-        I2cDeviceClient i2cDeviceClient = new I2cDeviceClient(context, i2cDevice, i2cAddr8Bit, false);
-        SwerveColorSensor result        = new SwerveColorSensor(context, i2cDeviceClient, flavor, target, controller, port);
+        II2cDevice i2cDevice             = new I2cDeviceOnI2cDeviceController(controller, port);
+        I2cDeviceClient i2cDeviceClient  = new I2cDeviceClient(context, i2cDevice, i2cAddr8Bit, false);
+        LegacyOrModernColorSensor result = new LegacyOrModernColorSensor(context, i2cDeviceClient, flavor, target, controller, port);
         result.arm();
         return result;
         }
@@ -171,7 +171,7 @@ public class SwerveColorSensor extends ColorSensor implements IOpModeStateTransi
 
     @Override public String getConnectionInfo()
         {
-        return null;
+        return this.i2cDeviceClient.getConnectionInfo();
         }
 
     @Override public String getDeviceName()

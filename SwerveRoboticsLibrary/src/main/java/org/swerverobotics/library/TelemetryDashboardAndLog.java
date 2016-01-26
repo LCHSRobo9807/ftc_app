@@ -251,10 +251,10 @@ public class TelemetryDashboardAndLog
 
     private static String getKey(int iLine)
         {
-        // At present (Aug 8, 2015), the driver station both sorts by the key we return here
-        // but also DISPLAYS it! Ugh. So we try to conserve space. And we use Unicode characters
-        // that don't actually take up space on the display.
-        return String.format("%c", 0x180 + iLine);
+        // Keys must be unique. If they start with nul, then they're not shown on the driver display.
+        // Historically, they were always shown, and sorted, so we used an increasing sequence
+        // of unrenderable strings.
+        return String.format("\0%c", 0x180 + iLine);
         }
 
      /**
@@ -275,6 +275,21 @@ public class TelemetryDashboardAndLog
         }
 
     /**
+     * Like {@link #update()}, but <em>always</em> transmits to the drive station. Use with
+     * caution, as this can get to be expensive if overused. A typical case when you'd want to
+     * use this occurs when you had been sending normal telemetry during some long-ish operation,
+     * but that operation is now complete, and you want the driver station telemetry to now
+     * accurately reflect the final state of the operation.
+     *
+     * @return whether an update to the drive station was made or not (will always be true)
+     * @see #update()
+     */
+    public synchronized boolean updateNow()
+        {
+        return update(getUpdateIntervalMs(), true, true);
+        }
+
+    /**
      * A variant on {@link #update()} in which one can explicitly specify the update interval
      * to be used.
      *
@@ -284,10 +299,10 @@ public class TelemetryDashboardAndLog
      */
     public synchronized boolean update(int msUpdateInterval)
         {
-        return update(msUpdateInterval, true);
+        return update(msUpdateInterval, true, false);
         }
 
-    private synchronized boolean update(int msUpdateInterval, boolean userRequest)
+    private synchronized boolean update(int msUpdateInterval, boolean userRequest, boolean forced)
         {
         boolean result = false;
 
@@ -295,7 +310,7 @@ public class TelemetryDashboardAndLog
         // computation in the robot controller and (to a lesser extent) reduced network
         // traffic to the driver station.
         long nanoNow = System.nanoTime();
-        if (nanoLastUpdate == 0
+        if (forced || nanoLastUpdate == 0
                 || nanoNow > nanoLastUpdate + (long)msUpdateInterval * SynchronousOpMode.NANO_TO_MILLI
                 || log.newLogMessagesAvailable
                 )
@@ -342,6 +357,7 @@ public class TelemetryDashboardAndLog
             // Build an object to carry our telemetry data.
             // Transmit same to the driver station.
             Telemetry transmitter = new Telemetry();
+            transmitter.setSorted(false);
             //
             for (int i = 0; i < keys.size(); i++)
                 {
@@ -581,7 +597,7 @@ public class TelemetryDashboardAndLog
                 this.prune();
                 }
 
-            TelemetryDashboardAndLog.this.update(getUpdateIntervalMs(), false);
+            TelemetryDashboardAndLog.this.update(getUpdateIntervalMs(), false, false);
             }
 
         /**
