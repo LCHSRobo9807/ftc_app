@@ -45,7 +45,7 @@ import java.util.concurrent.TimeUnit;
 
 
         //reverse right motor
-        motorRight.setDirection(DcMotor.Direction.REVERSE);
+        motorLeft.setDirection(DcMotor.Direction.REVERSE);
 
   
 
@@ -60,7 +60,7 @@ import java.util.concurrent.TimeUnit;
             {
                 // GAMEPAD1 Controls
                 motorRight.setPower(gamepad1.left_stick_y);
-                motorLeft.setPower(gamepad1.right_stick_y);
+                motorLeft.setPower(-gamepad1.right_stick_y);
 
                 if(gamepad1.a)
                 {
