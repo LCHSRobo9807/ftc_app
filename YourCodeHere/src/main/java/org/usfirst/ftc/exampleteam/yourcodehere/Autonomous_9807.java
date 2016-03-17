@@ -6,35 +6,35 @@ import org.swerverobotics.library.interfaces.*;
  * Created by hsrobotics on 11/12/2015.
  */
 
-@Autonomous(name="autonomous 9807")
+@Autonomous(name="autonomous 9807 Blueside")
 public class Autonomous_9807 extends SynchronousOpMode {
-    double Drive_Power=.75;
-    double Turn_Power =.75;
+    double Drive_Power=.5;
+    double Turn_Power =.5;
     boolean Code= false;
     public void Drive_Forward_Time(double power , long time) throws InterruptedException
     {
-        LeftMotor.setPower(power);
-        RightMotor.setPower(power);
+        LeftMotor.setPower(-power);
+        RightMotor.setPower(-power);
         Thread.sleep(time);
     }
     public void Turn_Left(long time) throws InterruptedException
-    {
-        LeftMotor.setPower(Turn_Power);
-        RightMotor.setPower(-Turn_Power);
-        Thread.sleep(time);
-    }
-
-    public void Turn_Right( long time) throws InterruptedException
     {
         LeftMotor.setPower(-Turn_Power);
         RightMotor.setPower(Turn_Power);
         Thread.sleep(time);
     }
 
+    public void Turn_Right( long time) throws InterruptedException
+    {
+        LeftMotor.setPower(Turn_Power);
+        RightMotor.setPower(-Turn_Power);
+        Thread.sleep(time);
+    }
+
     public void Reverse() throws InterruptedException
     {
-        LeftMotor.setPower(-Drive_Power);
-        RightMotor.setPower(-Drive_Power);
+        LeftMotor.setPower(Drive_Power);
+        RightMotor.setPower(Drive_Power);
         Thread.sleep(1000);
     }
     DcMotor LeftMotor = null;
@@ -52,13 +52,12 @@ public class Autonomous_9807 extends SynchronousOpMode {
 
 
 
-            Drive_Forward_Time(1.0,1000);
+            Drive_Forward_Time(.5,1600);
 
             Turn_Right(1000);
 
-            Drive_Forward_Time(1,1000);
+            Drive_Forward_Time(-1,1000);
 
-            Code = true;
 
 
 
