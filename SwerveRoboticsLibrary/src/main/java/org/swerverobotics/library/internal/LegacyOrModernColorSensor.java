@@ -9,7 +9,6 @@ import com.qualcomm.robotcore.hardware.*;
 import com.qualcomm.robotcore.util.*;
 
 import org.swerverobotics.library.ClassFactory;
-import org.swerverobotics.library.interfaces.*;
 
 /**
  * This class implements a driver for either a HiTechnic color sensor or a
@@ -47,7 +46,7 @@ public class LegacyOrModernColorSensor implements ColorSensor, IOpModeStateTrans
     public static final int COMMAND_50HZ                = 0x35;                     // MR sensor only
     public static final int COMMAND_60HZ                = 0x36;                     // MR sensor only
 
-    final I2cDeviceClient                       i2cDeviceClient;
+    final I2cDeviceSynch                        i2cDeviceSynch;
     final ClassFactory.SENSOR_FLAVOR            flavor;
           boolean                               ledIsEnabled;
           boolean                               ledStateIsKnown;
@@ -57,8 +56,7 @@ public class LegacyOrModernColorSensor implements ColorSensor, IOpModeStateTrans
     // Construction
     //----------------------------------------------------------------------------------------------
 
-    private LegacyOrModernColorSensor(OpMode context, I2cDeviceClient i2cDeviceClient, ClassFactory.SENSOR_FLAVOR flavor, ColorSensor target,
-                                      I2cController controller, int targetPort)
+    private LegacyOrModernColorSensor(OpMode context, I2cDeviceSynch i2cDeviceSynch, ClassFactory.SENSOR_FLAVOR flavor, ColorSensor target, I2cController controller, int targetPort)
         {
         switch (flavor)
             {
@@ -70,15 +68,15 @@ public class LegacyOrModernColorSensor implements ColorSensor, IOpModeStateTrans
             }
 
         this.helper          = new I2cDeviceReplacementHelper<ColorSensor>(context, this, target, controller, targetPort);
-        this.i2cDeviceClient = i2cDeviceClient;
+        this.i2cDeviceSynch  = i2cDeviceSynch;
         this.flavor          = flavor;
         this.ledIsEnabled    = false;
         this.ledStateIsKnown = false;
 
-        this.i2cDeviceClient.setReadWindow(new II2cDeviceClient.ReadWindow(
+        this.i2cDeviceSynch.setReadWindow(new I2cDeviceSynch.ReadWindow(
                 this.getOffsetBase() + OFFSET_READ_FIRST,
                 OFFSET_READ_MAX - OFFSET_READ_FIRST,
-                II2cDeviceClient.READ_MODE.REPEAT));
+                I2cDeviceSynch.ReadMode.REPEAT));
 
         RobotStateTransitionNotifier.register(context, this);
         }
@@ -92,15 +90,17 @@ public class LegacyOrModernColorSensor implements ColorSensor, IOpModeStateTrans
 
         if (target instanceof HiTechnicNxtColorSensor)
             {
-            controller  = MemberUtil.legacyModuleOfHiTechnicColorSensor(target);
-            port        = MemberUtil.portOfHiTechnicColorSensor(target);
+            HiTechnicNxtColorSensor colorTarget = (HiTechnicNxtColorSensor)target;
+            controller  = colorTarget.getI2cController();
+            port        = colorTarget.getPort();
             i2cAddr8Bit = ADDRESS_I2C_HITECHNIC;
             flavor      = ClassFactory.SENSOR_FLAVOR.HITECHNIC;
             }
         else if (target instanceof ModernRoboticsI2cColorSensor)
             {
-            controller  = MemberUtil.deviceModuleOfModernColorSensor(target);
-            port        = MemberUtil.portOfModernColorSensor(target);
+            ModernRoboticsI2cColorSensor colorTarget = (ModernRoboticsI2cColorSensor)target;
+            controller  = colorTarget.getI2cController();
+            port        = colorTarget.getPort();
             i2cAddr8Bit = target.getI2cAddress();
             flavor      = ClassFactory.SENSOR_FLAVOR.MODERNROBOTICS;
             }
@@ -112,28 +112,28 @@ public class LegacyOrModernColorSensor implements ColorSensor, IOpModeStateTrans
 
     public static ColorSensor create(OpMode context, I2cController controller, int port, int i2cAddr8Bit, ClassFactory.SENSOR_FLAVOR flavor, ColorSensor target)
         {
-        II2cDevice i2cDevice             = new I2cDeviceOnI2cDeviceController(controller, port);
-        I2cDeviceClient i2cDeviceClient  = new I2cDeviceClient(context, i2cDevice, i2cAddr8Bit, false);
-        LegacyOrModernColorSensor result = new LegacyOrModernColorSensor(context, i2cDeviceClient, flavor, target, controller, port);
-        result.arm();
+        I2cDevice i2cDevice              = ClassFactory.createI2cDevice(controller, port);
+        I2cDeviceSynch i2cDeviceSynch    = new I2cDeviceSynchImpl(i2cDevice, i2cAddr8Bit, true);
+        LegacyOrModernColorSensor result = new LegacyOrModernColorSensor(context, i2cDeviceSynch, flavor, target, controller, port);
+        result.engage();
         return result;
         }
 
-    private void arm()
+    private void engage()
         {
-        if (!this.helper.isArmed())
+        if (!this.helper.isEngaged())
             {
-            this.helper.arm();
-            this.i2cDeviceClient.arm();
+            this.helper.engage();
+            this.i2cDeviceSynch.engage();
             }
         }
 
-    private void disarm()
+    private void disengage()
         {
-        if (this.helper.isArmed())
+        if (this.helper.isEngaged())
             {
-            this.i2cDeviceClient.disarm();
-            this.helper.disarm();
+            this.i2cDeviceSynch.disengage();
+            this.helper.disengage();
             }
         }
 
@@ -143,7 +143,7 @@ public class LegacyOrModernColorSensor implements ColorSensor, IOpModeStateTrans
 
     @Override synchronized public boolean onUserOpModeStop()
         {
-        this.disarm();
+        this.disengage();
         return true;    // unregister us
         }
 
@@ -161,7 +161,7 @@ public class LegacyOrModernColorSensor implements ColorSensor, IOpModeStateTrans
 
     @Override public void close()
         {
-        this.i2cDeviceClient.close();
+        this.i2cDeviceSynch.close();
         }
 
     @Override public int getVersion()
@@ -171,7 +171,7 @@ public class LegacyOrModernColorSensor implements ColorSensor, IOpModeStateTrans
 
     @Override public String getConnectionInfo()
         {
-        return this.i2cDeviceClient.getConnectionInfo();
+        return this.i2cDeviceSynch.getConnectionInfo();
         }
 
     @Override public String getDeviceName()
@@ -194,7 +194,7 @@ public class LegacyOrModernColorSensor implements ColorSensor, IOpModeStateTrans
 
     int read(int dib)
         {
-        byte b = this.i2cDeviceClient.read8(getOffsetBase() + dib);
+        byte b = this.i2cDeviceSynch.read8(getOffsetBase() + dib);
         return TypeConversion.unsignedByteToInt(b);
         }
 
@@ -229,17 +229,17 @@ public class LegacyOrModernColorSensor implements ColorSensor, IOpModeStateTrans
             {
             this.ledIsEnabled = enable;
             this.ledStateIsKnown = true;
-            this.i2cDeviceClient.write8(getOffsetBase() + OFFSET_COMMAND, enable ? COMMAND_ACTIVE_LED : COMMAND_PASSIVE_LED);
+            this.i2cDeviceSynch.write8(getOffsetBase() + OFFSET_COMMAND, enable ? COMMAND_ACTIVE_LED : COMMAND_PASSIVE_LED);
             }
         }
 
     @Override public synchronized int getI2cAddress()
         {
-        return this.i2cDeviceClient.getI2cAddr();
+        return this.i2cDeviceSynch.getI2cAddr();
         }
 
     @Override public synchronized void setI2cAddress(int i2cAddr8Bit)
         {
-        this.i2cDeviceClient.setI2cAddr(i2cAddr8Bit);
+        this.i2cDeviceSynch.setI2cAddr(i2cAddr8Bit);
         }
     }
