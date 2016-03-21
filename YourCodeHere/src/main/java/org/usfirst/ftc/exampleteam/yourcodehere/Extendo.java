@@ -14,7 +14,7 @@ public class Extendo extends SynchronousOpMode
     DcMotor drive_r = null;
     DcMotor arm1 = null;
     DcMotor extend1=null;
-
+    DcMotor extend2= null;
 
     public void main() throws InterruptedException
 {
@@ -23,6 +23,7 @@ public class Extendo extends SynchronousOpMode
     this.arm1=this.hardwareMap.dcMotor.get("T_E");
     this.extend1=this.hardwareMap.dcMotor.get("M_E");
     drive_l.setDirection(DcMotor.Direction.REVERSE);
+    this.extend2=this.hardwareMap.dcMotor.get("extend2");
 
 
     waitForStart();
@@ -32,18 +33,19 @@ public class Extendo extends SynchronousOpMode
         if(updateGamepads())
         {  drive_l.setPower(gamepad1.left_stick_y);
             drive_r.setPower(gamepad1.right_stick_y);
-
+            extend2.setPower(gamepad2.left_stick_y);
+            extend1.setPower(gamepad2.right_stick_y);
          }
-        else if(gamepad1.a)
+        else if(gamepad2.a)
         {
             arm1.setPower(1);
 
         }
-        else if(gamepad1.b)
+        else if(gamepad2.b)
         {
           arm1.setPower(-1);
         }
-        else if(gamepad1.x)
+       /* else if(gamepad1.x)
         {
 
             extend1.setPower(-1);
@@ -53,11 +55,14 @@ public class Extendo extends SynchronousOpMode
         {
             extend1.setPower(1);
 
-        }
+        }*/
+
+
+
         else
         {
             arm1.setPower(0);
-            extend1.setPower(0);
+           
         }
     }//while
 
